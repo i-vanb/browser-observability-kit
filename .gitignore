@@ -1,0 +1,7 @@
+node_modules/
+artifacts/
+.idea/
+*.log
+*.pid
+.DS_Store
+coverage/

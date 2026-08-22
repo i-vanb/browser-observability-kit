@@ -1,0 +1,15 @@
+{
+  "name": "browser-observability-kit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CDP-based browser diagnostics with a plugin-driven live HUD and artifact collection.",
+  "scripts": {
+    "hud": "node src/cli/run.mjs",
+    "soak": "node src/scenarios/soak/runner.mjs",
+    "check": "for file in $(find src examples -type f -name '*.mjs' | sort); do node --check \"$file\" || exit 1; done"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
