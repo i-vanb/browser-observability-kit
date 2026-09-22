@@ -32,6 +32,7 @@ export async function launchBrowser({
   const profileDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'browser-observability-kit-'));
   const stdoutFd = artifactStore?.openLog('chrome-stdout.log') ?? null;
   const stderrFd = artifactStore?.openLog('chrome-stderr.log') ?? null;
+  let stderrTail = '';
   const args = [
     '--no-first-run', '--no-default-browser-check', '--remote-debugging-port=0',
     `--user-data-dir=${profileDir}`, '--window-size=1280,1000', '--new-window', 'about:blank'
@@ -41,8 +42,11 @@ export async function launchBrowser({
   if (ozonePlatform) args.unshift(`--ozone-platform=${ozonePlatform}`);
   args.unshift(...extraArgs);
   const child = spawn(chromeBin, args, {
-    stdio: ['ignore', stdoutFd ?? 'ignore', stderrFd ?? 'ignore'],
+    stdio: ['ignore', stdoutFd ?? 'ignore', stderrFd ?? 'pipe'],
     env: process.env
+  });
+  child.stderr?.on('data', (chunk) => {
+    stderrTail = (stderrTail + String(chunk)).slice(-8_000);
   });
   child.once('exit', (code, signal) => recordEvent('chrome-exit', { code, signal }));
   let browserCdp = null;
@@ -102,6 +106,7 @@ export async function launchBrowser({
     if (profileDir.startsWith(path.join(os.tmpdir(), 'browser-observability-kit-'))) {
       await fsp.rm(profileDir, { recursive: true, force: true }).catch(() => {});
     }
-    throw error;
+    const stderr = stderrTail.trim();
+    throw new Error(`${error.message}${stderr ? `; Chrome stderr: ${stderr}` : ''}`, { cause: error });
   }
 }
