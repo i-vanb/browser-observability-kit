@@ -1,4 +1,5 @@
 import { csvField } from '../../core/artifacts.mjs';
+import { takeDomSnapshot } from '../../browser/probes.mjs';
 
 export function createDomPlugin() {
   return {
@@ -9,13 +10,7 @@ export function createDomPlugin() {
       csvField('canvasElements', 'dom.canvas'), csvField('videoElements', 'dom.video'), csvField('audioElements', 'dom.audio')
     ],
     async sample(context) {
-      const dom = await context.evaluate(`(() => ({
-        elements: document.getElementsByTagName('*').length,
-        iframes: document.querySelectorAll('iframe').length,
-        canvas: document.querySelectorAll('canvas').length,
-        video: document.querySelectorAll('video').length,
-        audio: document.querySelectorAll('audio').length
-      }))()`);
+      const dom = await context.evaluate(`(${takeDomSnapshot.toString()})()`);
       return { patch: { dom }, hud: { dom: [`Elements ${dom.elements} | iframe ${dom.iframes} | video ${dom.video} | canvas ${dom.canvas} | audio ${dom.audio}`] } };
     }
   };

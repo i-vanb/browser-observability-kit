@@ -23,6 +23,34 @@ The repository contains no application-specific preset or workflow. Target selec
 
 Physical GPU metrics are reported only when a supported system source is available. Chrome GPU-process CPU/RSS is labeled separately and is not treated as physical GPU utilization.
 
+## Browser-safe observer
+
+The `browser-observability-kit/browser` entrypoint runs inside an existing page and has no Node.js or CDP dependency. It reports only metrics available to that page:
+
+- event-loop lag;
+- Long Tasks support, count, and longest task over the last 10 seconds;
+- `requestAnimationFrame` callbacks per second;
+- Canvas `drawImage` calls per second;
+- DOM element count.
+
+```js
+import { createBrowserObserver } from 'browser-observability-kit/browser';
+
+const observer = createBrowserObserver({ sampleIntervalMs: 1000 });
+observer.subscribe((snapshot) => {
+  console.log(snapshot);
+});
+observer.start();
+
+// Read immediately when needed.
+observer.snapshot();
+
+// Restore instrumented browser APIs and release timers.
+observer.destroy();
+```
+
+Unsupported Long Tasks are reported with `longTasksSupported: false` and `null` values rather than zero. Process CPU, RSS, Chrome GPU-process, and physical GPU metrics remain exclusive to the Node.js/CDP runner.
+
 ## Run the HUD
 
 ```bash
