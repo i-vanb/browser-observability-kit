@@ -138,7 +138,7 @@ export function createManagedObserver({
           url: targetUrl.href,
           headless: true,
           sandbox: true,
-          domains: ['Memory', 'Fetch'],
+          domains: ['Fetch'],
           scripts: [`(${installResponsivenessProbe.toString()})()`],
           extraArgs: [
             '--disable-background-networking',
