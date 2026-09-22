@@ -14,8 +14,20 @@ function parseProcMemory(pid) {
       anonymousMb: value(smaps, 'Anonymous') / 1024
     };
   } catch {
-    return { rssMb: 0, privateMb: 0, anonymousMb: 0 };
+    return { rssMb: null, privateMb: null, anonymousMb: null };
   }
+}
+
+function createProcessGroup() {
+  return {
+    cpu: 0,
+    rssMb: 0,
+    privateMb: 0,
+    anonymousMb: 0,
+    count: 0,
+    hasCpuDelta: false,
+    hasMemory: true
+  };
 }
 
 export class ChromeProcessSampler {
@@ -30,8 +42,8 @@ export class ChromeProcessSampler {
     this.previousAt = now;
     const info = await browserCdp.send('SystemInfo.getProcessInfo');
     const groups = {
-      renderer: { cpu: 0, rssMb: 0, privateMb: 0, anonymousMb: 0, count: 0, hasCpuDelta: false },
-      gpu: { cpu: 0, rssMb: 0, privateMb: 0, anonymousMb: 0, count: 0, hasCpuDelta: false }
+      renderer: createProcessGroup(),
+      gpu: createProcessGroup()
     };
     for (const item of info.processInfo ?? []) {
       const key = item.type === 'renderer' ? 'renderer' : item.type === 'GPU' ? 'gpu' : null;
@@ -46,13 +58,26 @@ export class ChromeProcessSampler {
         group.hasCpuDelta = true;
       }
       const memory = parseProcMemory(pid);
-      group.rssMb += memory.rssMb;
-      group.privateMb += memory.privateMb;
-      group.anonymousMb += memory.anonymousMb;
+      if (memory.rssMb === null) {
+        group.hasMemory = false;
+      } else {
+        group.rssMb += memory.rssMb;
+        group.privateMb += memory.privateMb;
+        group.anonymousMb += memory.anonymousMb;
+      }
       group.count++;
     }
     if (!groups.renderer.hasCpuDelta) groups.renderer.cpu = null;
     if (!groups.gpu.hasCpuDelta) groups.gpu.cpu = null;
+    for (const group of Object.values(groups)) {
+      if (!group.hasMemory || group.count === 0) {
+        group.rssMb = null;
+        group.privateMb = null;
+        group.anonymousMb = null;
+      }
+      delete group.hasCpuDelta;
+      delete group.hasMemory;
+    }
     return groups;
   }
 }

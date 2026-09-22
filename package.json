@@ -9,6 +9,11 @@
       "types": "./src/browser/index.d.ts",
       "import": "./src/browser/index.mjs",
       "default": "./src/browser/index.mjs"
+    },
+    "./managed": {
+      "types": "./src/managed/index.d.ts",
+      "import": "./src/managed/index.mjs",
+      "default": "./src/managed/index.mjs"
     }
   },
   "files": [

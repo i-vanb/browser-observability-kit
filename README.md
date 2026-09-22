@@ -51,6 +51,27 @@ observer.destroy();
 
 Unsupported Long Tasks are reported with `longTasksSupported: false` and `null` values rather than zero. Process CPU, RSS, Chrome GPU-process, and physical GPU metrics remain exclusive to the Node.js/CDP runner.
 
+## Managed Chrome observer
+
+The `browser-observability-kit/managed` entrypoint is the small, artifact-free API for a trusted server that owns a short-lived Chrome session. It launches headless Chrome with its sandbox enabled, blocks downloads, restricts page requests to an explicit origin allowlist, and samples at diagnostic cadence.
+
+```js
+import { createManagedObserver } from 'browser-observability-kit/managed';
+
+const observer = createManagedObserver({
+  url: 'https://example.com/fixed-workload',
+  allowedOrigins: ['https://example.com'],
+  readyExpression: 'Boolean(window.__FIXED_WORKLOAD__)'
+});
+
+observer.subscribe((snapshot) => console.log(snapshot));
+await observer.start();
+```
+
+Snapshots include renderer and Chrome GPU-process CPU/memory, CDP JS heap and DOM counters, responsiveness, and physical GPU telemetry only when a real provider is available. Unknown values are `null`, never synthetic zeroes.
+
+`evaluate()` is intentionally a trusted-runner primitive. Never pass request data into an expression; validate controls and build runner-owned calls from serialized values. URL allowlisting and a Chrome sandbox do not replace container isolation, short TTLs, concurrency limits, or rate limiting in a public service.
+
 ## Run the HUD
 
 ```bash
